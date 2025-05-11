@@ -55,7 +55,6 @@ def add_document(project_id):
         file = request.files['file']
         project = Project.query.get_or_404(project_id)
 
-        # Salva il file (esempio semplice)
         filename = secure_filename(file.filename)
         os.makedirs(f"uploads/{project_id}", exist_ok=True)
         filepath = os.path.join(f"uploads/{project_id}", filename)
@@ -77,6 +76,36 @@ def add_document(project_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# -----------------------------------------------
+# 3. MILESTONE ADDITION TO PROJECT
+# -----------------------------------------------
+@bp.route('/<project_id>/milestones', methods=['POST'])
+def add_milestone(project_id):
+    try:
+        data = request.get_json()
+        project = Project.query.get_or_404(project_id)
+
+        if not data.get('title'):
+            return jsonify({'error': 'Title is required'}), 400
+
+        new_milestone = Milestone(
+            title=data['title'],
+            due_date=datetime.fromisoformat(data['date']) if data.get('date') else None,
+            is_deadline=data.get('isDeadline', False),
+            project_id=project_id
+        )
+
+        db.session.add(new_milestone)
+        db.session.commit()
+
+        return jsonify(new_milestone.to_dict()), 201
+
+    except ValueError:
+        return jsonify({'error': 'Invalid date format (use ISO 8601)'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 
