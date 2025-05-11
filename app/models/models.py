@@ -28,8 +28,8 @@ class Document(db.Model):
     project_id = db.Column(db.String(36), db.ForeignKey('project.id'), nullable=False)
     filename = db.Column(db.String(200), nullable=False)
     category = db.Column(db.Enum(DocumentCategory), nullable=False)
-    content = db.Column(db.Text, nullable=True)  # Per caching
-    file_path = db.Column(db.String(500), nullable=True)  # Solo per backend
+    content = db.Column(db.Text, nullable=True)
+    file_path = db.Column(db.String(500), nullable=True)
 
     def to_dict(self):
         return {
@@ -40,6 +40,29 @@ class Document(db.Model):
         }
 
 
+class DocumentReference(db.Model):
+    __tablename__ = 'document_reference'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    question_id = db.Column(db.String(36), db.ForeignKey('question.id'), nullable=False)
+    document_id = db.Column(db.String(36), db.ForeignKey('document.id'), nullable=False)
+
+    line_number = db.Column(db.Integer, nullable=True)
+    page_number = db.Column(db.Integer, nullable=True)
+    char_offset = db.Column(db.Integer, nullable=True)
+    context_text = db.Column(db.Text, nullable=True)
+
+    document = db.relationship('Document', foreign_keys=[document_id])
+
+    def to_dict(self):
+        return {
+            'document': self.document.to_dict(),
+            'lineNumber': self.line_number,
+            'pageNumber': self.page_number,
+            'charOffset': self.char_offset,
+            'contextText': self.context_text
+        }
+
 # Question model
 class Question(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -47,11 +70,16 @@ class Question(db.Model):
     question = db.Column(db.Text, nullable=False)
     answer = db.Column(db.Text, nullable=False)
     correction = db.Column(db.Text, nullable=True)
-    evaluation = db.Column(db.Float, nullable=True)  # percentage
+    evaluation = db.Column(db.Float, nullable=True)
 
-    # Relazione con il documento di test
+    # Relazion with the document for the question
     test_document_id = db.Column(db.String(36), db.ForeignKey('document.id'), nullable=False)
     test_document = db.relationship('Document', foreign_keys=[test_document_id])
+
+    references = db.relationship('DocumentReference',
+                                 backref='question',
+                                 cascade='all, delete-orphan',
+                                 lazy=True)
 
     def to_dict(self):
         return {
@@ -60,7 +88,7 @@ class Question(db.Model):
             'correction': self.correction,
             'evaluation': self.evaluation,
             'testDocument': self.test_document.to_dict(),
-            'resources': []  # Da implementare se serve
+            'resources': [ref.to_dict() for ref in self.references]
         }
 
 
@@ -79,7 +107,6 @@ class LearningSession(db.Model):
     energy_level = db.Column(db.Float, default=0.0)
     performance_level = db.Column(db.Float, default=0.0)
     satisfaction_level = db.Column(db.Float, default=0.0)
-    #happyness_level = db.Column(db.Float, default=0.0)
 
     # Relazioni
     resource_documents = db.relationship('Document',
