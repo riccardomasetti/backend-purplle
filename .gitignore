@@ -26,10 +26,6 @@ logs/
 *.log
 local_settings.py
 
-# Flask specific
-migrations/versions/*.py  # Keep this if using Flask-Migrate (explanation below)
-!migrations/versions/.keep  # Optional - to keep empty versions directory
-
 # Testing
 .coverage
 htmlcov/

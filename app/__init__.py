@@ -2,11 +2,12 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 import os
 
 db = SQLAlchemy()
 cors = CORS()
-
+migrate = Migrate()
 
 def create_app():
     load_dotenv()
@@ -24,11 +25,11 @@ def create_app():
     db.init_app(app)
     cors.init_app(app)
 
+    from app.models import models
 
-    from app import models
+    migrate.init_app(app, db)
 
-    with app.app_context():
-        db.create_all()
+
 
     @app.route('/')
     def index():
