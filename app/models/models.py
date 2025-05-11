@@ -207,7 +207,7 @@ class Milestone(db.Model):
         return {
             'id': self.id,
             'title': self.title,
-            'date': self.due_date.isoformat() if self.due_date else None,
+            'date': self.due_date.isoformat(),
             'isDeadline': self.is_deadline
         }
 

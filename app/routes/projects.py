@@ -89,10 +89,20 @@ def add_milestone(project_id):
         if not data.get('title'):
             return jsonify({'error': 'Title is required'}), 400
 
+        if not data.get('date'):
+            return jsonify({'error': 'Date is required'}), 400
+
+        # Controlla se la nuova milestone è una deadline
+        is_deadline = data.get('isDeadline', False)
+
+        # Se è una deadline, disattiva qualsiasi deadline esistente
+        if is_deadline:
+            Milestone.query.filter_by(project_id=project_id, is_deadline=True).update({'is_deadline': False})
+
         new_milestone = Milestone(
             title=data['title'],
-            due_date=datetime.fromisoformat(data['date']) if data.get('date') else None,
-            is_deadline=data.get('isDeadline', False),
+            due_date=datetime.fromisoformat(data['date']),
+            is_deadline=is_deadline,
             project_id=project_id
         )
 
@@ -106,7 +116,6 @@ def add_milestone(project_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 
 
 
