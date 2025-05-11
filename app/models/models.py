@@ -29,7 +29,7 @@ class Document(db.Model):
     filename = db.Column(db.String(200), nullable=False)
     category = db.Column(db.Enum(DocumentCategory), nullable=False)
     content = db.Column(db.Text, nullable=True)
-    file_path = db.Column(db.String(500), nullable=True)
+    file_path = db.Column(db.String(500), nullable=False)
 
     def to_dict(self):
         return {
@@ -141,12 +141,12 @@ class LearningSession(db.Model):
 
 class Project(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = db.Column(db.String(100), nullable=True)  # Mettiamo?
+    title = db.Column(db.String(100), nullable=False)
 
     # Metrics
-    overall_performance = db.Column(db.Float, default=0.0)
-    difficulty = db.Column(db.Float, default=0.0)
-    interest = db.Column(db.Float, default=0.0)
+    overall_performance = db.Column(db.Float, nullable=True)
+    difficulty = db.Column(db.Float, nullable=True)
+    interest = db.Column(db.Float, nullable=True)
 
     motivations = db.Column(db.JSON, default=list)
 
@@ -164,7 +164,7 @@ class Project(db.Model):
 
     @validates('overall_performance', 'difficulty', 'interest')
     def validate_percentage(self, key, value):
-        if not 0 <= value <= 100:
+        if value is not None and not 0 <= value <= 100:
             raise ValueError(f"{key} must be between 0 and 100")
         return value
 
