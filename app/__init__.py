@@ -29,7 +29,8 @@ def create_app():
 
     migrate.init_app(app, db)
 
-
+    from app.routes.projects import bp as projects_bp
+    app.register_blueprint(projects_bp)
 
     @app.route('/')
     def index():
