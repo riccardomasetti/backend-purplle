@@ -1,8 +1,10 @@
 # Python virtual environment
 .venv/
+venv/
 
 # PyCharm IDE files
 .idea/
+*.iml
 
 # Python bytecode
 __pycache__/
@@ -11,3 +13,24 @@ __pycache__/
 
 # Environment variables
 .env
+.env*
+
+# Local development files
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and local settings
+logs/
+*.log
+local_settings.py
+
+# Flask specific
+migrations/versions/*.py  # Keep this if using Flask-Migrate (explanation below)
+!migrations/versions/.keep  # Optional - to keep empty versions directory
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
