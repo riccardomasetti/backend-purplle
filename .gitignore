@@ -30,3 +30,5 @@ local_settings.py
 .coverage
 htmlcov/
 .pytest_cache/
+
+uploads/

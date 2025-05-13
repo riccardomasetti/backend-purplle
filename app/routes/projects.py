@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
-from app.models.models import Project, Milestone, Document
+from app.models.models import *
 from app import db
 from datetime import datetime
 import uuid
@@ -117,5 +117,144 @@ def add_milestone(project_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# -----------------------------------------------
+# 4. CREATION OF A NEW LEARNING SESSION FOR A PROJECT
+# -----------------------------------------------
+@bp.route('/<project_id>/sessions', methods=['POST'])
+def create_learning_session(project_id):
+    try:
+        data = request.get_json()
+        project = Project.query.get_or_404(project_id)
+
+        # Verifica che i campi obbligatori siano presenti
+        if not data.get('durationMinutes'):
+            return jsonify({'error': 'Duration in minutes is required'}), 400
+
+        # Crea la sessione di apprendimento
+        new_session = LearningSession(
+            id=data.get('id', str(uuid.uuid4())),
+            project_id=project_id,
+            duration_minutes=data['durationMinutes'],
+            motivation=data.get('motivation'),
+            learning_objective=data.get('learningObjective'),
+            # Metriche (opzionali)
+            awareness_level=data.get('metrics', {}).get('awarenessLevel'),
+            confidence_level=data.get('metrics', {}).get('confidenceLevel'),
+            energy_level=data.get('metrics', {}).get('energyLevel'),
+            performance_level=data.get('metrics', {}).get('performanceLevel'),
+            satisfaction_level=data.get('metrics', {}).get('satisfactionLevel')
+        )
+
+        db.session.add(new_session)
+        db.session.commit()
+
+        return jsonify(new_session.to_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 5. LINKING DOCUMENTS TO A LEARNING SESSION FOR A PROJECT
+# -----------------------------------------------
+@bp.route('/<project_id>/sessions/<session_id>/documents', methods=['POST'])
+def add_documents_to_session(project_id, session_id):
+    try:
+        data = request.get_json()
+        session = LearningSession.query.get_or_404(session_id)
+        project = Project.query.get_or_404(project_id)
+
+        # Verifica che la sessione appartenga al progetto corretto
+        if session.project_id != project_id:
+            return jsonify({'error': 'Session does not belong to this project'}), 404
+
+        # Aggiungi documenti di risorsa
+        if 'resourceDocumentIds' in data and isinstance(data['resourceDocumentIds'], list):
+            for doc_id in data['resourceDocumentIds']:
+                doc = Document.query.get(doc_id)
+                if doc and doc.category == DocumentCategory.RESOURCE and doc not in session.resource_documents:
+                    session.resource_documents.append(doc)
+
+        # Aggiungi documenti di test
+        if 'testDocumentIds' in data and isinstance(data['testDocumentIds'], list):
+            for doc_id in data['testDocumentIds']:
+                doc = Document.query.get(doc_id)
+                if doc and doc.category == DocumentCategory.TEST and doc not in session.test_documents:
+                    session.test_documents.append(doc)
+
+        db.session.commit()
+
+        return jsonify(session.to_dict()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 6. ADDING A QUESTION TO A LEARNING SESSION
+# -----------------------------------------------
+@bp.route('/<project_id>/sessions/<session_id>/questions', methods=['POST'])
+def add_question_to_session(project_id, session_id):
+    try:
+        data = request.get_json()
+        session = LearningSession.query.get_or_404(session_id)
+        project = Project.query.get_or_404(project_id)
+
+        # Verifica che la sessione appartenga al progetto corretto
+        if session.project_id != project_id:
+            return jsonify({'error': 'Session does not belong to this project'}), 404
+
+        # Verifica che i campi obbligatori siano presenti
+        if not data.get('question') or not data.get('answer') or not data.get('testDocumentId'):
+            return jsonify({'error': 'Question, answer and testDocumentId are required'}), 400
+
+        # Verifica che il documento di test esista
+        test_doc = Document.query.get(data['testDocumentId'])
+        if not test_doc:
+            return jsonify({'error': 'Invalid test document'}), 400
+
+        # Crea la nuova domanda
+        new_question = Question(
+            id=data.get('id', str(uuid.uuid4())),
+            session_id=session_id,
+            question=data['question'],
+            answer=data['answer'],
+            correction=data.get('correction'),
+            evaluation=data.get('evaluation'),
+            test_document_id=data['testDocumentId']
+        )
+
+        # Aggiungi riferimenti ai documenti di risorsa se presenti
+        if 'references' in data and isinstance(data['references'], list):
+            for ref_data in data['references']:
+                doc_id = ref_data.get('documentId')
+                if not doc_id:
+                    continue
+
+                doc = Document.query.get(doc_id)
+                if not doc:
+                    continue
+
+                ref = DocumentReference(
+                    question_id=new_question.id,
+                    document_id=doc_id,
+                    line_number=ref_data.get('lineNumber'),
+                    page_number=ref_data.get('pageNumber'),
+                    char_offset=ref_data.get('charOffset'),
+                    context_text=ref_data.get('contextText')
+                )
+                db.session.add(ref)
+
+        db.session.add(new_question)
+        db.session.commit()
+
+        return jsonify(new_question.to_dict()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 

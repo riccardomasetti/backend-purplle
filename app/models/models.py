@@ -102,11 +102,11 @@ class LearningSession(db.Model):
     learning_objective = db.Column(db.Text, nullable=True)
 
     # Metriche
-    awareness_level = db.Column(db.Float, default=0.0)
-    confidence_level = db.Column(db.Float, default=0.0)
-    energy_level = db.Column(db.Float, default=0.0)
-    performance_level = db.Column(db.Float, default=0.0)
-    satisfaction_level = db.Column(db.Float, default=0.0)
+    awareness_level = db.Column(db.Float, nullable=True)
+    confidence_level = db.Column(db.Float, nullable=True)
+    energy_level = db.Column(db.Float, nullable=True)
+    performance_level = db.Column(db.Float, nullable=True)
+    satisfaction_level = db.Column(db.Float, nullable=True)
 
     # Relazioni
     resource_documents = db.relationship('Document',
@@ -122,7 +122,7 @@ class LearningSession(db.Model):
             'id': self.id,
             'projectId': self.project_id,
             'timestamp': self.timestamp.isoformat(),
-            'duration_minutes': self.duration_minutes,
+            'durationMinutes': self.duration_minutes,
             'motivation': self.motivation,
             'learningObjective': self.learning_objective,
             'metrics': {
@@ -210,5 +210,4 @@ class Milestone(db.Model):
             'date': self.due_date.isoformat(),
             'isDeadline': self.is_deadline
         }
-
 
