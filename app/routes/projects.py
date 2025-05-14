@@ -10,6 +10,10 @@ from sqlalchemy.exc import IntegrityError
 bp = Blueprint('projects', __name__, url_prefix='/api/projects')
 
 
+##########################
+#      POST METHODS      #
+##########################
+
 # -----------------------------------------------
 # 1. PROJECT CREATION
 # -----------------------------------------------
@@ -258,3 +262,139 @@ def add_question_to_session(project_id, session_id):
         return jsonify({'error': str(e)}), 500
 
 
+
+
+
+
+
+##########################
+#      GETS METHODS      #
+##########################
+
+# -----------------------------------------------
+# 7. GETTTING ALL THE PROJECTS
+# -----------------------------------------------
+@bp.route('/', methods=['GET'])
+def get_all_projects():
+    try:
+        projects = Project.query.all()
+        return jsonify([project.to_dict() for project in projects]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 8. GETTING THE PROJECT WITH A CERTAIN ID
+# -----------------------------------------------
+@bp.route('/<project_id>', methods=['GET'])
+def get_project(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        return jsonify(project.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# --------------------------------------------------
+# 9. GETTING ALL THE DOCUMENTS OF A CERTAIN PROJECT
+# --------------------------------------------------
+@bp.route('/<project_id>/documents', methods=['GET'])
+def get_project_documents(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        documents = Document.query.filter_by(project_id=project_id).all()
+        return jsonify([doc.to_dict() for doc in documents]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 10. GETTING THE DOCUMENT OF A CERTAIN INDEX
+# -----------------------------------------------
+@bp.route('/<project_id>/documents/<document_id>', methods=['GET'])
+def get_document(project_id, document_id):
+    try:
+        document = Document.query.get_or_404(document_id)
+
+        if document.project_id != project_id:
+            return jsonify({'error': 'Document does not belong to this project'}), 404
+
+        return jsonify(document.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 11. DOWNLOAD???
+# -----------------------------------------------
+@bp.route('/<project_id>/documents/<document_id>/download', methods=['GET'])
+def download_document(project_id, document_id):
+    try:
+        from flask import send_file
+
+        document = Document.query.get_or_404(document_id)
+
+        if document.project_id != project_id:
+            return jsonify({'error': 'Document does not belong to this project'}), 404
+
+        return send_file(document.file_path, download_name=document.filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ---------------------------------------------------
+# 12. GETTING ALL THE MILESTONES OF A CERTAIN PROJECT
+# ---------------------------------------------------
+@bp.route('/<project_id>/milestones', methods=['GET'])
+def get_project_milestones(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        milestones = Milestone.query.filter_by(project_id=project_id).all()
+        return jsonify([milestone.to_dict() for milestone in milestones]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------------------------------------
+# 13. GETTING THE MILESTONE WITH A CERTAIN ID
+# -----------------------------------------------
+@bp.route('/<project_id>/milestones/<milestone_id>', methods=['GET'])
+def get_milestone(project_id, milestone_id):
+    try:
+        milestone = Milestone.query.get_or_404(milestone_id)
+
+        if milestone.project_id != project_id:
+            return jsonify({'error': 'Milestone does not belong to this project'}), 404
+
+        return jsonify(milestone.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ---------------------------------------------------
+# 14. GETTING ALL THE MILESTONES OF A CERTAIN PROJECT
+# ---------------------------------------------------
+@bp.route('/<project_id>/sessions', methods=['GET'])
+def get_project_sessions(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        sessions = LearningSession.query.filter_by(project_id=project_id).all()
+        return jsonify([session.to_dict() for session in sessions]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ---------------------------------------------------
+# 15. GETTING THE SESSION WITH A CERTAIN ID
+# ---------------------------------------------------
+@bp.route('/<project_id>/sessions/<session_id>', methods=['GET'])
+def get_session(project_id, session_id):
+    try:
+        session = LearningSession.query.get_or_404(session_id)
+
+        if session.project_id != project_id:
+            return jsonify({'error': 'Session does not belong to this project'}), 404
+
+        return jsonify(session.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
