@@ -2,7 +2,7 @@
 
 ## Overview
 
-is a learning management application designed to help students continuously 
+PurpLLe is a learning management application designed to help students continuously 
 test their knowledge through organized study projects, tracked 
 learning sessions, document management, and progress evaluation. Built with Flask 
 and SQLAlchemy, this API-driven rappresent the backend of the complete application.
