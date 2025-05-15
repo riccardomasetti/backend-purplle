@@ -6,6 +6,12 @@ from enum import Enum
 
 
 # tables for many-to-many relationships
+
+question_resource = db.Table('question_resource',
+    db.Column('question_id', db.String(36), db.ForeignKey('question.id'), primary_key=True),
+    db.Column('document_id', db.String(36), db.ForeignKey('document.id'), primary_key=True)
+)
+
 learning_session_resource = db.Table('learning_session_resource',
     db.Column('session_id', db.String(36), db.ForeignKey('learning_session.id'), primary_key=True),
     db.Column('document_id', db.String(36), db.ForeignKey('document.id'), primary_key=True)
@@ -73,9 +79,14 @@ class Question(db.Model):
     evaluation = db.Column(db.Float, nullable=True)
 
     # Relazion with the document for the question
-    test_document_id = db.Column(db.String(36), db.ForeignKey('document.id'), nullable=False)
+    test_document_id = db.Column(db.String(36), db.ForeignKey('document.id'), nullable=True)
     test_document = db.relationship('Document', foreign_keys=[test_document_id])
 
+    resource_documents = db.relationship('Document',
+                                         secondary=question_resource,
+                                         backref='related_questions')
+
+    # Detailed references to document sections/excerpts
     references = db.relationship('DocumentReference',
                                  backref='question',
                                  cascade='all, delete-orphan',
@@ -83,12 +94,14 @@ class Question(db.Model):
 
     def to_dict(self):
         return {
+            'id': self.id,
             'question': self.question,
             'answer': self.answer,
             'correction': self.correction,
             'evaluation': self.evaluation,
-            'testDocument': self.test_document.to_dict(),
-            'resources': [ref.to_dict() for ref in self.references]
+            'testDocument': self.test_document.to_dict() if self.test_document else None,
+            'resourceDocuments': [doc.to_dict() for doc in self.resource_documents],
+            'references': [ref.to_dict() for ref in self.references]
         }
 
 
