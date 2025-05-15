@@ -5,6 +5,7 @@ from app.models.models import *
 from app import db
 from datetime import datetime
 import uuid
+from flask import send_file
 from sqlalchemy.exc import IntegrityError
 
 bp = Blueprint('projects', __name__, url_prefix='/api/projects')
@@ -325,19 +326,32 @@ def get_document(project_id, document_id):
 
 
 # -----------------------------------------------
-# 11. DOWNLOAD???
+# 11. DOWNLOAD THE FIE WITH THE SELECTED ID
 # -----------------------------------------------
+# call it with:curl -X GET "http://localhost:5000/api/projects/{project_id}/documents/{document_id}/download" -J -O
 @bp.route('/<project_id>/documents/<document_id>/download', methods=['GET'])
 def download_document(project_id, document_id):
     try:
         from flask import send_file
+        import os
 
         document = Document.query.get_or_404(document_id)
 
         if document.project_id != project_id:
             return jsonify({'error': 'Document does not belong to this project'}), 404
 
-        return send_file(document.file_path, download_name=document.filename)
+        # Check if the path is absolute or relative
+        if os.path.isabs(document.file_path):
+            file_path = document.file_path
+        else:
+            # If it's a relative path, make it relative to the application root
+            file_path = os.path.join(os.getcwd(), document.file_path)
+
+        # Verify the file exists
+        if not os.path.exists(file_path):
+            return jsonify({'error': f'File not found: {file_path}'}), 404
+
+        return send_file(file_path, download_name=document.filename)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
