@@ -23,12 +23,12 @@ def create_project():
     try:
         data = request.get_json()
 
-        if not data.get('title'):
-            return jsonify({'error': 'Title is required'}), 400
+        if not data.get('name'):
+            return jsonify({'error': 'Name is required'}), 400
 
         new_project = Project(
             id=data.get('id', str(uuid.uuid4())),
-            title=data['title'],
+            name=data['name'],
             motivations=data.get('motivations', []),
             overall_performance=data.get('overall_performance'),
             difficulty=data.get('difficulty'),
@@ -91,8 +91,8 @@ def add_milestone(project_id):
         data = request.get_json()
         project = Project.query.get_or_404(project_id)
 
-        if not data.get('title'):
-            return jsonify({'error': 'Title is required'}), 400
+        if not data.get('name'):
+            return jsonify({'error': 'Name is required'}), 400
 
         if not data.get('date'):
             return jsonify({'error': 'Date is required'}), 400
@@ -105,7 +105,7 @@ def add_milestone(project_id):
             Milestone.query.filter_by(project_id=project_id, is_deadline=True).update({'is_deadline': False})
 
         new_milestone = Milestone(
-            title=data['title'],
+            name=data['name'],
             due_date=datetime.fromisoformat(data['date']),
             is_deadline=is_deadline,
             project_id=project_id

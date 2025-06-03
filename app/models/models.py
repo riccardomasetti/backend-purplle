@@ -154,7 +154,7 @@ class LearningSession(db.Model):
 
 class Project(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
 
     # Metrics
     overall_performance = db.Column(db.Float, nullable=True)
@@ -186,7 +186,7 @@ class Project(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'title': self.title,
+            'name': self.name,
             'milestones': [m.to_dict() for m in self.milestones],
             'tasks': [t.to_dict() for t in self.tasks],
             'deadlineMilestone': self.deadline_milestone.to_dict() if self.deadline_milestone else None,
@@ -201,12 +201,12 @@ class Project(db.Model):
         }
 
     def __repr__(self):
-        return f'<Project {self.title}>'
+        return f'<Project {self.name}>'
 
 
 class Milestone(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     due_date = db.Column(db.DateTime, nullable=False)
     is_deadline = db.Column(db.Boolean, default=False)
     project_id = db.Column(db.String(36), db.ForeignKey('project.id'), nullable=True)
@@ -222,7 +222,7 @@ class Milestone(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
-            'title': self.title,
+            'name': self.name,
             'date': self.due_date.isoformat(),
             'isDeadline': self.is_deadline
         }
@@ -233,6 +233,9 @@ class Task(db.Model):
     name = db.Column(db.String(100), nullable=False)
     project_id = db.Column(db.String(36), db.ForeignKey('project.id'), nullable=False)
     milestone_id = db.Column(db.String(36), db.ForeignKey('milestone.id'), nullable=True)
+    completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    description = db.Column(db.Text, nullable=True)
 
     # Relationships
     milestone = db.relationship('Milestone', backref='tasks')
