@@ -352,9 +352,59 @@ def get_session(project_id, session_id):
         return jsonify({'error': str(e)}), 500
 
 
+# ---------------------------------------------------
+# 16. GET ALL THE TASK OF A CERTAIN PROJECT
+# ---------------------------------------------------
+@bp.route('/<project_id>/tasks', methods=['GET'])
+def get_project_tasks(project_id):
+    """Get all tasks for a specific project"""
+    try:
+        project = Project.query.get_or_404(project_id)
+        return jsonify([task.to_dict() for task in project.tasks]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
+# ---------------------------------------------------
+# 17. CREATE A NEW TASK FOR A CERTAIN PROJECT
+# ---------------------------------------------------
+@bp.route('/<project_id>/tasks', methods=['POST'])
+def create_project_task(project_id):
+    """Create a new task for a specific project"""
+    try:
+        # Verify project exists
+        project = Project.query.get_or_404(project_id)
 
+        data = request.json
+        if not data or 'name' not in data:
+            return jsonify({'error': 'Task name is required'}), 400
+
+        new_task = Task(
+            name=data['name'],
+            project_id=project_id,
+            milestone_id=data.get('milestone_id')  # Optional milestone connection
+        )
+
+        db.session.add(new_task)
+        db.session.commit()
+
+        return jsonify(new_task.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+
+# ---------------------------------------------------
+# 18. GET A SPECIFIC TASK FOR A CERTAIN PROJECT
+# ---------------------------------------------------
+@bp.route('/<project_id>/tasks/<task_id>', methods=['GET'])
+def get_task(project_id, task_id):
+    """Get a specific task by ID"""
+    try:
+        task = Task.query.filter_by(id=task_id, project_id=project_id).first_or_404()
+        return jsonify(task.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 # --------------------------------------------------
 # TODO: ENDPOINT FOR GETTING QUESTIONS

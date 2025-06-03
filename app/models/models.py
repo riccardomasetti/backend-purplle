@@ -175,6 +175,8 @@ class Project(db.Model):
 
     learning_sessions = db.relationship('LearningSession', backref='project', lazy=True, cascade='all, delete-orphan')
 
+    tasks = db.relationship('Task', backref='project', lazy=True, cascade='all, delete-orphan')
+
     @validates('overall_performance', 'difficulty', 'interest')
     def validate_percentage(self, key, value):
         if value is not None and not 0 <= value <= 100:
@@ -186,6 +188,7 @@ class Project(db.Model):
             'id': self.id,
             'title': self.title,
             'milestones': [m.to_dict() for m in self.milestones],
+            'tasks': [t.to_dict() for t in self.tasks],
             'deadlineMilestone': self.deadline_milestone.to_dict() if self.deadline_milestone else None,
             'documents': [d.to_dict() for d in self.documents],
             'motivations': self.motivations,
@@ -224,3 +227,23 @@ class Milestone(db.Model):
             'isDeadline': self.is_deadline
         }
 
+
+class Task(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    project_id = db.Column(db.String(36), db.ForeignKey('project.id'), nullable=False)
+    milestone_id = db.Column(db.String(36), db.ForeignKey('milestone.id'), nullable=True)
+
+    # Relationships
+    milestone = db.relationship('Milestone', backref='tasks')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'project_id': self.project_id,
+            'milestone': self.milestone.to_dict() if self.milestone else None
+        }
+
+    def __repr__(self):
+        return f'<Task {self.name}>'
