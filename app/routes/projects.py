@@ -413,3 +413,63 @@ def get_task(project_id, task_id):
 # --------------------------------------------------
 # TODO: MANAGEMENT OF DOCUMENT REFERENCE
 # --------------------------------------------------
+
+
+# --------------------------------------------------
+# 7. ENDPOINT FOR TRIGGER QUESTIONS CREATIONS BY THE LLM
+# --------------------------------------------------
+@bp.route('/<project_id>/sessions/<session_id>/generate-questions', methods=['POST'])
+def generate_questions(project_id, session_id):
+    """Generate questions for a learning session based on resource documents"""
+    try:
+        # Verify the session exists and belongs to the project
+        session = LearningSession.query.get_or_404(session_id)
+        if session.project_id != project_id:
+            return jsonify({'error': 'Session does not belong to this project'}), 404
+
+        # Get all resource documents linked to this session
+        resource_documents = session.resource_documents
+
+        if not resource_documents:
+            return jsonify({'error': 'No resource documents found for this session'}), 400
+
+        # Import the question generation function
+        from app.utils.ai_services import generate_question_from_document
+
+        generated_questions = []
+
+        # Process each resource document
+        for document in resource_documents:
+            # Generate a question from the document
+            question_text, answer_text = generate_question_from_document(document.file_path)
+
+            # Skip if question generation failed
+            if question_text.startswith("Error") or question_text.startswith("Could not"):
+                continue
+
+            # Create a new Question object
+            new_question = Question(
+                session_id=session_id,
+                question=question_text,
+                answer=answer_text
+            )
+
+            # Link the resource document to this question
+            new_question.resource_documents.append(document)
+
+            # Add to database
+            db.session.add(new_question)
+            generated_questions.append(new_question)
+
+        # Commit all changes to the database
+        db.session.commit()
+
+        # Return the generated questions
+        return jsonify({
+            'message': f'Generated {len(generated_questions)} questions',
+            'questions': [q.to_dict() for q in generated_questions]
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
