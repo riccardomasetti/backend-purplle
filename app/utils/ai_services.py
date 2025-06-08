@@ -33,11 +33,7 @@ def generate_question_from_document(file_path, topic=None):
     if len(text) > max_length:
         text = text[:max_length] + "..."
 
-    question_types = [
-        "factual", "conceptual", "analytical", "application", "comparative",
-        "evaluative"
-    ]
-
+    question_types = ["multiple_choise", "open_question", "analytical", "application", "comparative"]
     difficulty_levels = ["introductory", "intermediate"]
 
     # Randomly select question characteristics
