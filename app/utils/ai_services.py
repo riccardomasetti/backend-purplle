@@ -93,3 +93,75 @@ def generate_question_from_document(file_path, topic=None):
 
     except Exception as e:
         return f"Error generating question", f"An error occurred: {str(e)}"
+
+
+def extract_questions_from_test(file_path):
+    """
+    Extract exam questions from a TEST document and return them as-is.
+
+    Args:
+        file_path (str): Path to the TEST document file
+
+    Returns:
+        list: List of tuples (question, answer) extracted from the document
+    """
+    # Extract text from the document
+    text = extract_text_from_file(file_path)
+
+    # If text extraction failed or returned an error message
+    if text.startswith("Error") or text.startswith("Unsupported"):
+        return [("Could not extract questions", text)]
+
+    # Truncate text if too long (Gemini has token limits)
+    max_length = 10000  # Adjust as needed based on Gemini's limits
+    if len(text) > max_length:
+        text = text[:max_length] + "..."
+
+    # Create a prompt for Gemini
+    prompt = f"""
+        Based on the following exam content, identify and extract the existing questions and answers.
+        Do not modify the questions - report them exactly as they appear in the text.
+
+        CONTENT:
+        {text}
+
+        INSTRUCTIONS:
+        - Extract the questions and answers exactly as they appear in the text.
+        - Question must be complete, not only a part of it. Write all the text that you need to make the question as 
+         similar as possible to the text in the document.
+        - Do not create new questions or modify existing ones
+        - Format your response as a JSON array of objects, each with 'question' and 'answer' fields
+        - Don't include any other text outside the JSON format
+        """
+
+    # Generate content using Gemini
+    try:
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(prompt)
+
+        # Extract question and answer from the response
+        response_text = response.text
+
+        # Parse the response
+        try:
+            # Clean up response text to extract just the JSON
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].strip()
+
+            import json
+            result = json.loads(response_text)
+
+            # Handle both single question and multiple questions
+            if isinstance(result, list):
+                return [(item.get("question"), item.get("answer")) for item in result]
+            else:
+                return [(result.get("question"), result.get("answer"))]
+
+        except Exception as e:
+            # Fallback parsing if JSON extraction fails
+            return [("Failed to extract questions properly", f"Error parsing response: {str(e)}")]
+
+    except Exception as e:
+        return [(f"Error extracting questions", f"An error occurred: {str(e)}")]
