@@ -57,6 +57,7 @@ def generate_question_from_document(file_path, topic=None):
         - Provide a comprehensive answer to the question
         - Format your response as a JSON with 'question' and 'answer' fields
         - Don't include any other text outside the JSON format
+        - CRITICAL: Don't include any infomation about the seed, or the number of slide in the question or answer
         """
 
     if topic:

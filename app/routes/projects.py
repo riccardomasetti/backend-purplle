@@ -448,7 +448,8 @@ def generate_questions(project_id, session_id):
                 session_id=session_id,
                 question=question_text,
                 answer=answer_text,
-                test_document_id=document.id
+                #test_document_id=document.id, it is not needed, there is a ManyToMany relation between question and document
+                source_type=QuestionSourceType.RESOURCE
             )
 
 
@@ -469,7 +470,7 @@ def generate_questions(project_id, session_id):
 
 
 # -------------------------------------------------------------
-# 18. ENDPOINT FOR TRIGGER TEST QUESTIONS CREATIONS BY THE LLM
+# 19. ENDPOINT FOR TRIGGER TEST QUESTIONS CREATIONS BY THE LLM
 # -------------------------------------------------------------
 @bp.route('/<project_id>/sessions/<session_id>/extract-test-questions', methods=['POST'])
 def extract_test_questions(project_id, session_id):
@@ -478,41 +479,35 @@ def extract_test_questions(project_id, session_id):
     The questions are extracted as they appear in the text without modification.
     """
     try:
-        # Get the session and check if it belongs to the project
         session = LearningSession.query.get(session_id)
         if not session or session.project_id != project_id:
             return jsonify({'error': 'Session not found or does not belong to the project'}), 404
 
-        # Get the TEST documents associated with the session
         test_documents = session.test_documents
         if not test_documents:
             return jsonify({'error': 'No TEST documents associated with this session'}), 400
 
-        # Create questions for each test document
         created_questions = []
         for doc in test_documents:
             if doc.category != DocumentCategory.TEST:
                 continue
 
-            # Extract questions from the test document
             from app.utils.ai_services import extract_questions_from_test
             question_answer_pairs = extract_questions_from_test(doc.file_path)
 
-            # Create Question objects for each extracted pair
             for question_text, answer_text in question_answer_pairs:
                 question = Question(
                     session_id=session_id,
                     question=question_text,
                     answer=answer_text,
-                    test_document_id=doc.id
+                    test_document_id=doc.id,
+                    source_type=QuestionSourceType.TEST
                 )
                 db.session.add(question)
                 created_questions.append(question)
 
-        # Commit changes to the database
         db.session.commit()
 
-        # Return the created questions
         return jsonify({
             'message': f'Successfully extracted {len(created_questions)} questions from TEST documents',
             'questions': [q.to_dict() for q in created_questions]

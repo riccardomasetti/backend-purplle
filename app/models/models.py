@@ -28,6 +28,11 @@ class DocumentCategory(Enum):
     RESOURCE = 'Resource'
     TEST = 'Test'
 
+class QuestionSourceType(Enum):
+    RESOURCE = 'Resource'
+    TEST = 'Test'
+
+
 # Document model
 class Document(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -77,6 +82,7 @@ class Question(db.Model):
     answer = db.Column(db.Text, nullable=False)
     correction = db.Column(db.Text, nullable=True)
     evaluation = db.Column(db.Float, nullable=True)
+    source_type = db.Column(db.Enum(QuestionSourceType), nullable=False)
 
     # Relazion with the document for the question
     test_document_id = db.Column(db.String(36), db.ForeignKey('document.id'), nullable=True)
@@ -99,6 +105,7 @@ class Question(db.Model):
             'answer': self.answer,
             'correction': self.correction,
             'evaluation': self.evaluation,
+            'sourceType': self.source_type.value,
             'testDocument': self.test_document.to_dict() if self.test_document else None,
             'resourceDocuments': [doc.to_dict() for doc in self.resource_documents],
             'references': [ref.to_dict() for ref in self.references]
